@@ -2245,7 +2245,18 @@ async function connectToAccurateDb(dbId, dbName) {
       updateAccurateUI();
       toast('Berhasil terhubung ke ' + dbName, 'success');
     } else {
-      toast('Gagal membuka database: ' + (resp.d ? resp.d[0] : 'Unknown error'), 'error');
+      const errMsg = resp.d ? resp.d[0] : 'Unknown error';
+      const installMatch = errMsg.match(/(https:\/\/account\.accurate\.id\/marketplace\/[^\s]+)/);
+      if (installMatch) {
+        toast('App belum di-install. Klik link di bawah untuk install.', 'error');
+        const log = document.getElementById('accurate-sync-log');
+        if (log) {
+          log.style.display = 'block';
+          log.innerHTML = `<div style="margin-bottom:8px;">${errMsg}</div><a href="${installMatch[1]}" target="_blank" style="color:var(--info);text-decoration:underline;font-weight:600;">Klik di sini untuk install aplikasi</a>`;
+        }
+      } else {
+        toast('Gagal membuka database: ' + errMsg, 'error');
+      }
     }
   } catch (e) {
     toast('Error: ' + e.message, 'error');
