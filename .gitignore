@@ -1,0 +1,22 @@
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Editor / tool
+.vscode/
+.idea/
+*.swp
+
+# Netlify local
+.netlify/
+
+# Backup artefak download browser
+* (1)*
+*.bak
+*.tmp
+
+# Kredensial lokal (jaga-jaga)
+.env
+.env.*
+*.local
