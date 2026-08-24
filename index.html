@@ -6961,7 +6961,8 @@ async function runAutoBillingFollowup() {
 window.addEventListener('DOMContentLoaded', async () => {
   // — Check for Accurate Online OAuth callback (access_token in URL fragment) —
   if (handleAccurateCallback()) {
-    toast('Berhasil terhubung ke Accurate Online!', 'success');
+    toast('Berhasil terhubung ke Accurate Online! Silakan pilih database.', 'success');
+    setTimeout(() => { nav('accurate'); loadAccurateDatabases(); }, 500);
   }
 
   const creds = getSavedCreds();
