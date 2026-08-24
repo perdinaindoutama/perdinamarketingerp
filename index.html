@@ -2248,11 +2248,17 @@ async function connectToAccurateDb(dbId, dbName) {
       const errMsg = resp.d ? resp.d[0] : 'Unknown error';
       const installMatch = errMsg.match(/(https:\/\/account\.accurate\.id\/marketplace\/[^\s]+)/);
       if (installMatch) {
-        toast('App belum di-install. Klik link di bawah untuk install.', 'error');
-        const log = document.getElementById('accurate-sync-log');
-        if (log) {
-          log.style.display = 'block';
-          log.innerHTML = `<div style="margin-bottom:8px;">${errMsg}</div><a href="${installMatch[1]}" target="_blank" style="color:var(--info);text-decoration:underline;font-weight:600;">Klik di sini untuk install aplikasi</a>`;
+        toast('App belum di-install dari Accurate Store.', 'error');
+        const dbsSection = document.getElementById('accurate-dbs-section');
+        if (dbsSection) {
+          const installHtml = document.createElement('div');
+          installHtml.style.cssText = 'margin-top:12px;padding:16px;background:var(--warning-bg);border:2px solid var(--warning);border-radius:10px;';
+          installHtml.innerHTML = `
+            <div style="font-weight:700;color:var(--warning);margin-bottom:6px;">⚠️ Aplikasi belum ter-install</div>
+            <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">Klik tombol di bawah untuk install aplikasi ke database <strong>${dbName}</strong>:</div>
+            <a href="${installMatch[1]}" target="_blank" style="display:inline-block;padding:10px 20px;background:var(--primary);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;">📦 Install dari Accurate Store</a>
+          `;
+          dbsSection.appendChild(installHtml);
         }
       } else {
         toast('Gagal membuka database: ' + errMsg, 'error');
