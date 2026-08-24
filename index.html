@@ -2266,9 +2266,6 @@ async function checkAccurateSession() {
       return true;
     }
   } catch (e) {}
-  accurateState.sessionId = '';
-  accurateState.host = '';
-  saveAccurateState();
   return false;
 }
 
@@ -2340,7 +2337,24 @@ function addSyncLog(msg, type = 'info') {
 async function syncAllFromAccurate() {
   if (!isAccurateConnected()) { toast('Hubungkan Accurate Online terlebih dahulu.', 'error'); return; }
   const valid = await checkAccurateSession();
-  if (!valid) { toast('Session expired. Hubungkan ulang.', 'error'); return; }
+  if (!valid) {
+    toast('Session expired. Mencoba refresh...', 'info');
+    try {
+      const refresh = await accurateApi('refresh-session');
+      if (refresh.s && refresh.session) {
+        accurateState.sessionId = refresh.session;
+        if (refresh.host) accurateState.host = refresh.host;
+        saveAccurateState();
+        toast('Session berhasil di-refresh.', 'success');
+      } else {
+        toast('Gagal refresh session. Hubungkan ulang di menu Integrasi Akuntansi.', 'error');
+        return;
+      }
+    } catch (e) {
+      toast('Gagal refresh session. Hubungkan ulang di menu Integrasi Akuntansi.', 'error');
+      return;
+    }
+  }
   const logEl = document.getElementById('accurate-sync-log');
   if (logEl) logEl.innerHTML = '';
   addSyncLog('Memulai sinkronisasi...');
@@ -2443,7 +2457,24 @@ async function syncAllFromAccurate() {
 async function syncSalesFromAccurate() {
   if (!isAccurateConnected()) { toast('Hubungkan Accurate Online di menu Integrasi Akuntansi.', 'error'); return; }
   const valid = await checkAccurateSession();
-  if (!valid) { toast('Session expired. Hubungkan ulang.', 'error'); return; }
+  if (!valid) {
+    toast('Session expired. Mencoba refresh...', 'info');
+    try {
+      const refresh = await accurateApi('refresh-session');
+      if (refresh.s && refresh.session) {
+        accurateState.sessionId = refresh.session;
+        if (refresh.host) accurateState.host = refresh.host;
+        saveAccurateState();
+        toast('Session berhasil di-refresh.', 'success');
+      } else {
+        toast('Gagal refresh session. Hubungkan ulang di menu Integrasi Akuntansi.', 'error');
+        return;
+      }
+    } catch (e) {
+      toast('Gagal refresh session. Hubungkan ulang di menu Integrasi Akuntansi.', 'error');
+      return;
+    }
+  }
   showLoading('Sync Sales Order dari Accurate...');
   let count = 0;
   try {
