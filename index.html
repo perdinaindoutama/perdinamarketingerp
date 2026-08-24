@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PERDINA Marketing Intelligence System</title>
-<!-- v14 — F1:Daily Activity edit+delete; F2:CRM lead_stage field+modal; F3:CRM KPI Customer vs Lead + conversion rate; F4:filterCRM last interaction + buyer/lead badge; F5:filterCustomers buyer/lead column; F6:Marketing Calendar 5-type filter (task/activity/billing/content/visit) + color dots -->
+<!-- v14.1 — F1:Daily Activity edit+delete; F2:CRM lead_stage field+modal; F3:CRM KPI Customer vs Lead + conversion rate; F4:filterCRM last interaction + buyer/lead badge; F5:filterCustomers buyer/lead column; F6:Marketing Calendar 5-type filter (task/activity/billing/content/visit) + color dots; SECURITY: added escapeHtml() — fixed XSS in 49 innerHTML injection points (customer names, product names, invoice numbers, notes, avatar URLs) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -2139,7 +2139,13 @@ function initials(name) {
   return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
 }
 function avatarHtml(name, size = 'xs') {
-  return `<span class="avatar-${size}" title="${name}">${initials(name)}</span>`;
+  return `<span class="avatar-${size}" title="${escapeHtml(name)}">${initials(name)}</span>`;
+}
+function escapeHtml(s) {
+  if (s == null) return '';
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(String(s)));
+  return d.innerHTML;
 }
 function showLoading(text = 'Memuat...') {
   document.getElementById('loading-overlay').style.display = 'flex';
@@ -2812,7 +2818,7 @@ async function initApp(user) {
       if (currentProfile?.avatar_url) {
         const navAvatar = document.getElementById('nav-avatar');
         if (navAvatar) {
-          navAvatar.innerHTML = `<img src="${currentProfile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="avatar">`;
+          navAvatar.innerHTML = `<img src="${escapeHtml(currentProfile.avatar_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="avatar">`;
         }
       }
     } catch(e) { console.warn('[initApp] Profile load failed:', e.message); }
@@ -3075,20 +3081,20 @@ function populateCustomerSelects() {
   const states = [...new Set(allCustomers.map(c => c.state).filter(Boolean))].sort();
   const stEl = document.getElementById('cust-filter-state');
   if (stEl) {
-    stEl.innerHTML = '<option value="">Semua Provinsi</option>' + states.map(s => `<option>${s}</option>`).join('');
+    stEl.innerHTML = '<option value="">Semua Provinsi</option>' + states.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
   }
   // Sales product filter
   const prods = [...new Set(allSales.map(s => s.product_name).filter(Boolean))].sort();
   const pfEl = document.getElementById('sales-filter-product');
-  if (pfEl) pfEl.innerHTML = '<option value="">Semua Produk</option>' + prods.map(p => `<option>${p}</option>`).join('');
+  if (pfEl) pfEl.innerHTML = '<option value="">Semua Produk</option>' + prods.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
   const cfEl = document.getElementById('sales-filter-customer');
-  if (cfEl) cfEl.innerHTML = '<option value="">Semua Customer</option>' + allCustomers.map(c => `<option>${c.name}</option>`).join('');
+  if (cfEl) cfEl.innerHTML = '<option value="">Semua Customer</option>' + allCustomers.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('');
 
   // v12: CLV filter customer
   const clvCustEl = document.getElementById('clv-filter-customer');
   if (clvCustEl) {
     const custNamesInSales = [...new Set(allSales.map(s => s.customer_name).filter(Boolean))].sort();
-    clvCustEl.innerHTML = '<option value="">Semua Customer</option>' + custNamesInSales.map(n => `<option>${n}</option>`).join('');
+    clvCustEl.innerHTML = '<option value="">Semua Customer</option>' + custNamesInSales.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
   }
   // v12: CLV filter year
   const clvYrEl = document.getElementById('clv-filter-year');
@@ -3100,13 +3106,13 @@ function populateCustomerSelects() {
   const trendEl = document.getElementById('crm-trend-customer');
   if (trendEl) {
     const custNamesInSales = [...new Set(allSales.map(s => s.customer_name).filter(Boolean))].sort();
-    trendEl.innerHTML = '<option value="">— Pilih Customer —</option>' + custNamesInSales.map(n => `<option>${n}</option>`).join('');
+    trendEl.innerHTML = '<option value="">— Pilih Customer —</option>' + custNamesInSales.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
   }
   // v12: Billing invoice dropdown
   const buInvEl = document.getElementById('bu-invoice');
   if (buInvEl) {
     const unpaidInvs = allInvoices.filter(i => i.status !== 'Paid');
-    buInvEl.innerHTML = '<option value="">— Pilih Invoice —</option>' + unpaidInvs.map(i => `<option value="${i.id}">${i.invoice_number} (${i.customer_name})</option>`).join('');
+    buInvEl.innerHTML = '<option value="">— Pilih Invoice —</option>' + unpaidInvs.map(i => `<option value="${escapeHtml(i.id)}">${escapeHtml(i.invoice_number)} (${escapeHtml(i.customer_name)})</option>`).join('');
   }
 }
 
@@ -3122,19 +3128,19 @@ function initDashboardFilters() {
   // Years
   const years = [...new Set(allSales.map(s => s.date ? new Date(s.date).getFullYear() : null).filter(Boolean))].sort().reverse();
   const yrSel = document.getElementById('db-filter-year');
-  if (yrSel) { yrSel.innerHTML = '<option value="">Semua Tahun</option>' + years.map(y => `<option value="${y}">${y}</option>`).join(''); }
+  if (yrSel) { yrSel.innerHTML = '<option value="">Semua Tahun</option>' + years.map(y => `<option value="${escapeHtml(y)}">${escapeHtml(y)}</option>`).join(''); }
   // Products
   const prods = [...new Set(allSales.map(s => s.product_name).filter(Boolean))].sort();
   const prdSel = document.getElementById('db-filter-product');
-  if (prdSel) { prdSel.innerHTML = '<option value="">Semua Produk</option>' + prods.map(p => `<option value="${p}">${p}</option>`).join(''); }
+  if (prdSel) { prdSel.innerHTML = '<option value="">Semua Produk</option>' + prods.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join(''); }
   // Categories
   const cats = [...new Set(allProducts.map(p => p.category).filter(Boolean))].sort();
   const catSel = document.getElementById('db-filter-category');
-  if (catSel) { catSel.innerHTML = '<option value="">Semua Kategori</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join(''); }
+  if (catSel) { catSel.innerHTML = '<option value="">Semua Kategori</option>' + cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join(''); }
   // Customers
   const custs = [...new Set(allSales.map(s => s.customer_name).filter(Boolean))].sort();
   const custSel = document.getElementById('db-filter-customer');
-  if (custSel) { custSel.innerHTML = '<option value="">Semua Customer</option>' + custs.map(c => `<option value="${c}">${c}</option>`).join(''); }
+  if (custSel) { custSel.innerHTML = '<option value="">Semua Customer</option>' + custs.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join(''); }
 }
 
 function getFilteredSales() {
@@ -3281,8 +3287,8 @@ function renderDashboardCharts() {
     <div class="alert-item">
       <div class="alert-icon">⚠️</div>
       <div>
-        <div class="alert-text">${i.customer_name}</div>
-        <div class="alert-sub">${i.invoice_number} – ${fmtRpExact(i.amount)} – Jatuh tempo: ${fmtDate(i.due_date)}</div>
+        <div class="alert-text">${escapeHtml(i.customer_name)}</div>
+        <div class="alert-sub">${escapeHtml(i.invoice_number)} – ${fmtRpExact(i.amount)} – Jatuh tempo: ${fmtDate(i.due_date)}</div>
       </div>
     </div>`).join('') : '<p style="color:var(--text3);font-size:13px;">Tidak ada invoice overdue 🎉</p>';
 
@@ -3430,14 +3436,14 @@ function buildTopCustomers(sales) {
   document.getElementById('top-customers-list').innerHTML = byRev.length ? byRev.map(([name, rev], i) => `
     <div class="clv-row">
       <div class="clv-rank">${i+1}</div>
-      <div class="clv-name">${name}</div>
+      <div class="clv-name">${escapeHtml(name)}</div>
       <div class="clv-bar-wrap"><div class="clv-bar" style="width:${(rev/maxRev*100).toFixed(0)}%;background:var(--primary);"></div></div>
       <div class="clv-value">${fmtRp(rev)}</div>
     </div>`).join('') : '<div class="empty-row">Tidak ada data</div>';
   document.getElementById('top-customers-freq').innerHTML = byFreq.length ? byFreq.map(([name, cnt], i) => `
     <div class="clv-row">
       <div class="clv-rank" style="background:var(--navy);">${i+1}</div>
-      <div class="clv-name">${name}</div>
+      <div class="clv-name">${escapeHtml(name)}</div>
       <div class="clv-bar-wrap"><div class="clv-bar" style="width:${(cnt/maxFreq*100).toFixed(0)}%;background:var(--navy);"></div></div>
       <div class="clv-value" style="color:var(--navy);">${cnt} orders</div>
     </div>`).join('') : '<div class="empty-row">Tidak ada data</div>';
@@ -3612,7 +3618,7 @@ function filterSales() {
 
   document.getElementById('sales-tbody').innerHTML = page.length ? page.map((g, i) => {
     // Build product display: first product + badge for extras
-    const firstProd = g.products[0] || '—';
+    const firstProd = escapeHtml(g.products[0] || '—');
     const extraCount = g.products.length - 1;
     const prodDisplay = extraCount > 0
       ? `${firstProd} <span style="background:var(--accent-light);color:var(--primary);border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600;">+${extraCount} produk</span>`
@@ -3622,11 +3628,11 @@ function filterSales() {
     <tr>
       <td style="color:var(--text3);">${start + i + 1}</td>
       <td>${fmtDate(g.date)}</td>
-      <td class="mono" style="font-size:11px;">${g.so_number || '—'}</td>
-      <td style="font-weight:500;">${g.customer_name}</td>
-      <td style="font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${g.products.join(', ')}">${prodDisplay}</td>
+      <td class="mono" style="font-size:11px;">${escapeHtml(g.so_number || '—')}</td>
+      <td style="font-weight:500;">${escapeHtml(g.customer_name)}</td>
+      <td style="font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(g.products.join(', '))}">${prodDisplay}</td>
       <td class="mono" style="font-weight:600;">${fmtRpExact(g.totalSO)}</td>
-      <td style="font-size:11px;color:var(--text3);">${g.creator_email ? g.creator_email.split('@')[0] : '—'}</td>
+      <td style="font-size:11px;color:var(--text3);">${g.creator_email ? escapeHtml(g.creator_email.split('@')[0]) : '—'}</td>
       <td style="white-space:nowrap;">
         <button class="btn-outline" style="font-size:10px;padding:2px 6px;margin-right:2px;color:var(--info);border-color:var(--info);" onclick="viewSODetail(${g.id})" title="Lihat Detail">🔍</button>
         <button class="btn-outline" style="font-size:10px;padding:2px 6px;margin-right:2px;" onclick="editSale(${g.id})" title="Edit">✏️</button>
@@ -3967,17 +3973,17 @@ function filterInvoices() {
     const soDisplay = (() => {
       if (!i.so_number) return '—';
       const parts = i.so_number.split(',').map(s => s.trim()).filter(Boolean);
-      if (parts.length <= 1) return i.so_number;
-      return parts[0] + ` <span style="font-size:10px;background:var(--accent-light);color:var(--primary);border-radius:8px;padding:1px 5px;">+${parts.length-1}</span>`;
+      if (parts.length <= 1) return escapeHtml(i.so_number);
+      return escapeHtml(parts[0]) + ` <span style="font-size:10px;background:var(--accent-light);color:var(--primary);border-radius:8px;padding:1px 5px;">+${parts.length-1}</span>`;
     })();
     return `
     <tr>
-      <td class="mono" style="font-size:12px;font-weight:600;">${i.invoice_number}</td>
+      <td class="mono" style="font-size:12px;font-weight:600;">${escapeHtml(i.invoice_number)}</td>
       <td class="mono" style="font-size:11px;color:var(--text3);">${soDisplay}</td>
-      <td style="font-weight:500;">${i.customer_name}</td>
+      <td style="font-weight:500;">${escapeHtml(i.customer_name)}</td>
       <td style="font-size:12px;">${fmtDate(i.invoice_date)}</td>
       <td class="mono" style="font-weight:600;color:var(--primary);">${fmtRpExact(displayAmt)}</td>
-      <td style="font-size:11px;color:var(--text3);">${i.payment_terms || '—'}</td>
+      <td style="font-size:11px;color:var(--text3);">${escapeHtml(i.payment_terms || '—')}</td>
       <td style="font-size:12px;">${fmtDate(i.due_date)}</td>
       <td>${agingBadge(i)}</td>
       <td><span class="status ${statusClass(i.status)}">${i.status}</span></td>
@@ -4145,8 +4151,8 @@ async function renderBilling() {
     <div class="alert-item" style="margin-bottom:8px;">
       <div class="alert-icon">${i.status === 'Overdue' ? '🔴' : '🟡'}</div>
       <div style="flex:1;">
-        <div class="alert-text" style="font-weight:600;">${i.customer_name}</div>
-        <div class="alert-sub">${i.invoice_number} | ${fmtRpExact(i.amount)} | Due: ${fmtDate(i.due_date)}</div>
+        <div class="alert-text" style="font-weight:600;">${escapeHtml(i.customer_name)}</div>
+        <div class="alert-sub">${escapeHtml(i.invoice_number)} | ${fmtRpExact(i.amount)} | Due: ${fmtDate(i.due_date)}</div>
       </div>
       <span class="status ${statusClass(i.status)}">${i.status}</span>
     </div>`).join('') : '<p style="font-size:13px;color:var(--text3);">Tidak ada invoice overdue 🎉</p>';
@@ -4155,8 +4161,8 @@ async function renderBilling() {
     <div class="timeline-item">
       <div class="timeline-dot"></div>
       <div class="timeline-content">
-        <div class="timeline-date">${fmtDateTime(l.created_at)} – ${l.followup_type}</div>
-        <div class="timeline-text"><strong>${l.customer_name}</strong>: ${l.notes}</div>
+        <div class="timeline-date">${fmtDateTime(l.created_at)} – ${escapeHtml(l.followup_type)}</div>
+        <div class="timeline-text"><strong>${escapeHtml(l.customer_name)}</strong>: ${escapeHtml(l.notes)}</div>
       </div>
     </div>`).join('') : '<p style="font-size:12px;color:var(--text3);">Belum ada log follow-up</p>';
 }
@@ -4322,28 +4328,28 @@ function filterCRM() {
     const lastAct = actMap[c.name];
     const interactionHtml = lastAct
       ? `<div style="font-size:11px;color:var(--info);margin-top:6px;padding:5px 8px;background:var(--info-bg);border-radius:6px;">
-           🕐 ${fmtDate(lastAct.activity_date)} · <strong>${lastAct.activity_type}</strong>${lastAct.notes ? ' — ' + lastAct.notes.substring(0,40) + (lastAct.notes.length>40?'...':'') : ''}
+           🕐 ${fmtDate(lastAct.activity_date)} · <strong>${escapeHtml(lastAct.activity_type)}</strong>${lastAct.notes ? ' — ' + escapeHtml(lastAct.notes.substring(0,40)) + (lastAct.notes.length>40?'...':'') : ''}
          </div>`
       : `<div style="font-size:11px;color:var(--text3);margin-top:6px;">💬 Belum ada interaksi</div>`;
     const leadStageHtml = (c.status === 'Lead' && c.lead_stage)
-      ? `<div style="font-size:11px;margin-top:4px;"><span style="background:var(--accent-light);color:var(--accent);border-radius:10px;padding:2px 8px;font-weight:600;">📍 ${c.lead_stage}</span></div>`
+      ? `<div style="font-size:11px;margin-top:4px;"><span style="background:var(--accent-light);color:var(--accent);border-radius:10px;padding:2px 8px;font-weight:600;">📍 ${escapeHtml(c.lead_stage)}</span></div>`
       : '';
     return `
     <div class="card" style="padding:16px;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <div class="user-avatar" style="width:36px;height:36px;font-size:12px;">${initials(c.name)}</div>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.name}</div>
-          <div style="font-size:11px;color:var(--text3);">${c.state || '—'}</div>
+          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.name)}</div>
+          <div style="font-size:11px;color:var(--text3);">${escapeHtml(c.state || '—')}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
-          <span class="status ${statusClass(c.status)}" style="flex-shrink:0;">${c.status}</span>
+          <span class="status ${statusClass(c.status)}" style="flex-shrink:0;">${escapeHtml(c.status)}</span>
           ${isBuyer ? '<span style="font-size:9px;background:#D1FAE5;color:#065F46;border-radius:8px;padding:1px 6px;font-weight:700;">✓ Buyer</span>' : '<span style="font-size:9px;background:#FEF3C7;color:#92400E;border-radius:8px;padding:1px 6px;">Lead</span>'}
         </div>
       </div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:3px;">📱 ${c.mobile || '—'}</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:3px;">🏷️ ${c.customer_type || 'Business'}</div>
-      ${c.industry ? `<div style="font-size:12px;color:var(--text2);">🏭 ${c.industry}</div>` : ''}
+      <div style="font-size:12px;color:var(--text2);margin-bottom:3px;">📱 ${escapeHtml(c.mobile || '—')}</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:3px;">🏷️ ${escapeHtml(c.customer_type || 'Business')}</div>
+      ${c.industry ? `<div style="font-size:12px;color:var(--text2);">🏭 ${escapeHtml(c.industry)}</div>` : ''}
       ${c.estimated_value ? `<div style="font-size:12px;color:var(--primary);margin-top:4px;font-weight:500;">Est. nilai: ${fmtRpExact(c.estimated_value)}</div>` : ''}
       ${leadStageHtml}
       ${interactionHtml}
@@ -4447,13 +4453,13 @@ function filterCustomers() {
     const isBuyer = _buyerNames.has(c.name);
     return `
     <tr>
-      <td style="color:var(--text3);font-size:12px;">${c.cust_id || c.id}</td>
-      <td style="font-weight:500;">${c.name}</td>
-      <td class="mono" style="font-size:12px;">${c.mobile || '—'}</td>
-      <td>${c.customer_type || 'Business'}</td>
-      <td style="font-size:12px;">${c.city || '—'}</td>
-      <td style="font-size:12px;">${c.state || '—'}</td>
-      <td><span class="status ${statusClass(c.status)}">${c.status}</span>${c.lead_stage ? `<br><span style="font-size:10px;color:var(--accent);">📍 ${c.lead_stage}</span>` : ''}</td>
+      <td style="color:var(--text3);font-size:12px;">${escapeHtml(c.cust_id || c.id)}</td>
+      <td style="font-weight:500;">${escapeHtml(c.name)}</td>
+      <td class="mono" style="font-size:12px;">${escapeHtml(c.mobile || '—')}</td>
+      <td>${escapeHtml(c.customer_type || 'Business')}</td>
+      <td style="font-size:12px;">${escapeHtml(c.city || '—')}</td>
+      <td style="font-size:12px;">${escapeHtml(c.state || '—')}</td>
+      <td><span class="status ${statusClass(c.status)}">${escapeHtml(c.status)}</span>${c.lead_stage ? `<br><span style="font-size:10px;color:var(--accent);">📍 ${escapeHtml(c.lead_stage)}</span>` : ''}</td>
       <td>${isBuyer ? '<span style="font-size:10px;background:#D1FAE5;color:#065F46;border-radius:8px;padding:1px 6px;font-weight:700;">✓ Buyer</span>' : '<span style="font-size:10px;background:#FEF3C7;color:#92400E;border-radius:8px;padding:1px 6px;">Lead</span>'}</td>
       <td style="white-space:nowrap;">
         <button class="btn-outline" style="font-size:11px;padding:2px 8px;margin-right:3px;" onclick="editCustomer(${c.id})">✏️ Edit</button>
@@ -4475,7 +4481,7 @@ async function renderCLV() {
   document.getElementById('clv-list').innerHTML = sorted.map(([name, rev], i) => `
     <div class="clv-row">
       <div class="clv-rank" style="background:${i < 3 ? 'var(--accent)' : 'var(--primary)'}">${i + 1}</div>
-      <div class="clv-name">${name}</div>
+      <div class="clv-name">${escapeHtml(name)}</div>
       <div class="clv-bar-wrap"><div class="clv-bar" style="width:${(rev / maxR * 100).toFixed(0)}%"></div></div>
       <div class="clv-value">${fmtRp(rev)}</div>
     </div>`).join('');
@@ -4501,8 +4507,8 @@ async function renderVisits() {
   document.getElementById('visits-tbody').innerHTML = allVisits.length ? allVisits.map(v => `
     <tr>
       <td>${fmtDate(v.visit_date)}</td>
-      <td style="font-weight:500;">${v.customer_name}</td>
-      <td style="font-size:12px;">${v.objective}</td>
+      <td style="font-weight:500;">${escapeHtml(v.customer_name)}</td>
+      <td style="font-size:12px;">${escapeHtml(v.objective)}</td>
       <td><span class="status ${v.outcome ? 'status-done' : 'status-todo'}">${v.outcome ? 'Selesai' : 'Terjadwal'}</span></td>
       <td style="white-space:nowrap;">
         <button class="btn-outline" style="font-size:11px;padding:2px 8px;margin-right:3px;" onclick="editVisit(${v.id})">✏️ Edit</button>
