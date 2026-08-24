@@ -15,12 +15,7 @@ dan integrasi akuntansi **Accurate Online**.
 | File | Fungsi |
 |---|---|
 | `index.html` | **Seluruh aplikasi** (~7.100 baris / ~430 KB). CSS inline di `<head>`, semua halaman sebagai `<div id="page-*">`, semua logika JS dalam satu blok `<script>` besar. |
-| `netlify.toml` | Konfigurasi deploy Netlify: `publish = "."`, functions di `netlify/functions`. |
-| `netlify/functions/accurate-proxy.js` | Netlify Function — CORS proxy dari browser ke Accurate Online API (`db-list`, `open-db`, `check-session`, `refresh-session`, `api-call`). |
 | `PERDINA_MIGRATION_v5_4_crm_activity.sql` | Migrasi Postgres (Supabase) v5.4 — idempoten (`DO $$ IF NOT EXISTS $$`). Menambah kolom `lead_stage`, `last_interaction_date/type/summary` di tabel `customers`, `updated_at` di `activities`, plus index performa. |
-
-> ⚠️ Nama `index (1).html` adalah artefak download browser. Untuk deploy Netlify,
-> file harus direname menjadi `index.html`. (✅ sudah direname di repo ini.)
 
 ## Tech Stack
 
@@ -31,8 +26,7 @@ dan integrasi akuntansi **Accurate Online**.
 - **Backend**: Supabase (Postgres + Auth). URL & anon key tertanam di konstanta
   `SUPABASE_EMBEDDED_URL` / `SUPABASE_EMBEDDED_KEY` (index.html ~line 2015); fallback:
   Setup Wizard yang menyimpan kredensial ke `localStorage` (`sb_url`, `sb_key`).
-- **Hosting**: Netlify (static + functions).
-- **Integrasi**: Accurate Online (OAuth token disimpan di `localStorage`: `aol_access_token`, `aol_session_id`, dst.) melalui proxy function.
+- **Hosting**: GitHub Pages (static only — `perdinaindoutama.github.io/perdinamarketingerp/`).
 
 ## Arsitektur Aplikasi (index.html)
 
@@ -52,9 +46,13 @@ dan integrasi akuntansi **Accurate Online**.
 ## Menjalankan & Deploy
 
 - **Lokal**: buka `index.html` langsung di browser (butuh internet untuk CDN & Supabase). Tidak ada dev server.
-- **Deploy**: push folder ke Netlify (static site). Pastikan HTML sudah direname `index.html`. Function proxy otomatis ter-deploy dari `netlify/functions/`.
+- **Deploy**: push ke branch `main` di repo `perdinamarketingerp` → otomatis ter-deploy ke GitHub Pages (`perdinaindoutama.github.io/perdinamarketingerp/`).
 
 ## Keamanan
 
 - Yang tertanam hanya **anon key** Supabase (publik by design, dilindungi RLS) — bukan service key. Tetap jangan commit service key / token Accurate ke repo.
 - Token Accurate Online hanya tersimpan di `localStorage` client, tidak pernah melewati repo.
+
+## Catatan Penting
+
+- **Integrasi Accurate Online**: fitur ini membutuhkan CORS proxy server-side (sebelumnya pakai Netlify Functions). Karena GitHub Pages = static only, fitur Accurate Online **tidak bisa berjalan** tanpa proxy eksternal (Cloudflare Workers / Vercel / Netlify Functions terpisah). Untuk sementara fitur ini non-aktif.
