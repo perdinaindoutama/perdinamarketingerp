@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PERDINA Marketing Intelligence System</title>
-<!-- v14.1 — F1:Daily Activity edit+delete; F2:CRM lead_stage field+modal; F3:CRM KPI Customer vs Lead + conversion rate; F4:filterCRM last interaction + buyer/lead badge; F5:filterCustomers buyer/lead column; F6:Marketing Calendar 5-type filter (task/activity/billing/content/visit) + color dots; SECURITY: added escapeHtml() — fixed XSS in 49 innerHTML injection points (customer names, product names, invoice numbers, notes, avatar URLs) -->
+<!-- v14.2 — F1:Daily Activity edit+delete; F2:CRM lead_stage field+modal; F3:CRM KPI Customer vs Lead + conversion rate; F4:filterCRM last interaction + buyer/lead badge; F5:filterCustomers buyer/lead column; F6:Marketing Calendar 5-type filter (task/activity/billing/content/visit) + color dots; SECURITY: added escapeHtml() — fixed XSS in 49 innerHTML injection points; ACCURATE: migrated proxy from Netlify Functions to Vercel Serverless (perdinamarketingerp.vercel.app) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -2191,7 +2191,8 @@ function accurateApi(action, params = {}) {
   const body = { action, accessToken: accurateState.accessToken, ...params };
   if (accurateState.sessionId) body.sessionId = accurateState.sessionId;
   if (accurateState.dbId) body.dbId = accurateState.dbId;
-  return fetch('/.netlify/functions/accurate-proxy', {
+  const PROXY_URL = 'https://perdinamarketingerp.vercel.app/api/accurate-proxy';
+  return fetch(PROXY_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)

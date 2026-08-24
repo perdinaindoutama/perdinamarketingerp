@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/accurate-proxy.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/accurate-proxy",
+      "dest": "/api/accurate-proxy.js"
+    }
+  ]
+}
