@@ -19,6 +19,7 @@ desktop.ini
 # Kredensial lokal (jaga-jaga)
 .env
 .env.*
+!.env.example
 *.local
 
 .vercel
