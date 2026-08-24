@@ -55,4 +55,4 @@ dan integrasi akuntansi **Accurate Online**.
 
 ## Catatan Penting
 
-- **Integrasi Accurate Online**: fitur ini membutuhkan CORS proxy server-side (sebelumnya pakai Netlify Functions). Karena GitHub Pages = static only, fitur Accurate Online **tidak bisa berjalan** tanpa proxy eksternal (Cloudflare Workers / Vercel / Netlify Functions terpisah). Untuk sementara fitur ini non-aktif.
+- **Integrasi Accurate Online**: proxy serverless berjalan di **Vercel** (`perdinamarketingerp.vercel.app/api/accurate-proxy`). Config di `vercel.json` + function di `api/accurate-proxy.js`.
